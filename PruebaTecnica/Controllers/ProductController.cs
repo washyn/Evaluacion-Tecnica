@@ -1,47 +1,30 @@
-﻿using System.Data.SqlClient;
+﻿using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
+using PruebaTecnica.Models;
+using PruebaTecnica.Repositories;
 
-namespace PruebaTecnica;
+namespace PruebaTecnica.Controllers;
 
+[ApiController]
+[Route("api/product")]
 public class ProductController : Controller
 {
-    private string connectionString = "Server=myServerAddress;Database=myDataBase;User Id=myUsername;Password=myPassword;";
+    private readonly IProductRepository _productRepository;
 
-    public IActionResult GetAllProducts()
+    public ProductController(IProductRepository productRepository)
     {
-        List<string> products = new List<string>();
-        using (SqlConnection connection = new SqlConnection(connectionString))
-        {
-            connection.Open();
-            SqlCommand command = new SqlCommand("SELECT Name FROM Products", connection);
-            SqlDataReader reader = command.ExecuteReader();
-            try
-            {
-                while (reader.Read())
-                {
-                    products.Add(reader.GetString(0));
-                }
-            }
-            finally
-            {
-                reader.Close();
-            }
-        }
-        return View(products);
+        _productRepository = productRepository;
+    }
+    
+    [HttpGet]
+    public async Task<List<string>> GetAllProducts()
+    {
+        return await _productRepository.GetAllProducts();
     }
 
-    public IActionResult AddProduct(string name)
+    [HttpPost]
+    public async Task AddProduct(CreateProduct product)
     {
-        using (SqlConnection connection = new SqlConnection(connectionString))
-        {
-            connection.Open();
-            string sql = "INSERT INTO Products (Name) VALUES (@Name)";
-            using (SqlCommand command = new SqlCommand(sql, connection))
-            {
-                command.Parameters.AddWithValue("@Name", name);
-                command.ExecuteNonQuery();
-            }
-        }
-        return RedirectToAction("GetAllProducts");
+        await _productRepository.CreateProduct(product.Name);
     }
 }
